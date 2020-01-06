@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var rootPath string = "/Users/yp/Documents/workspace/qooqapp/qooqmobi/src/"
+var rootPath string = "rootPath"
 var fileList = list.New()
 var line int = 1
 
