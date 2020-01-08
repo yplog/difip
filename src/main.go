@@ -29,12 +29,15 @@ func main() {
 	if len(args) > 0 {
 		if args[0] == "help" {
 			help()
+		} else if args[0] == "tree" {
+			readConfigFile()
+			fmt.Println("Dir Tree: ", rootPath)
+			visit(rootPath, 0)
 		} else {
 			startArgs(args)
 			operations()
 		}
 	} else {
-		fmt.Println("No Args")
 		if !checkConfigFile() {
 			createConfigFile()
 		} else {
@@ -53,6 +56,9 @@ Use Args:
 	.difip <rootpath> <ip>
 	.difip <rootpath>
 	.difip help
+	.difip tree 
+		"Directory tree view"
+				
 
 Use Config File:
 	The variables inside the config.toml file must be changed.
