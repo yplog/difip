@@ -10,14 +10,72 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
-var rootPath string = "rootPath"
+var rootPath string = ""
+var ip = ""
 var fileList = list.New()
 var line int = 1
 
+type Config struct {
+	Root string
+	IP   string
+}
+
 func main() {
-	fmt.Println("Local Addr:", getLocalAddr())
+	args := os.Args[1:]
+	if len(args) > 0 {
+		if args[0] == "help" {
+			help()
+		} else {
+			startArgs(args)
+			operations()
+		}
+	} else {
+		fmt.Println("No Args")
+		if !checkConfigFile() {
+			createConfigFile()
+		} else {
+			readConfigFile()
+			operations()
+		}
+	}
+}
+
+func help() {
+	fmt.Println(`
+!If no ip address is specified, the local ip address is used.
+!The Root Path has to be defined.
+
+Use Args:
+	.difip <rootpath> <ip>
+	.difip <rootpath>
+	.difip help
+
+Use Config File:
+	The variables inside the config.toml file must be changed.
+	`)
+}
+
+func startArgs(args []string) {
+	if len(args) == 1 {
+		rootPath = args[0]
+		ip = getLocalAddr()
+		fmt.Println("RootPath: ", rootPath, "IP: ", ip)
+	} else if len(args) == 2 {
+		rootPath = args[0]
+		ip = args[1]
+		fmt.Println("Root Path: ", rootPath, "IP: ", ip)
+	} else {
+		fmt.Println("Undefined Arguments")
+		fmt.Println("run <rootpath> <ip>")
+	}
+}
+
+func operations() {
+	fmt.Println("Local Addr:", ip, "Root Path:", rootPath)
 
 	fmt.Println("Dir Tree: ")
 	visit(rootPath, 0)
@@ -34,6 +92,50 @@ func main() {
 	}
 }
 
+func readConfigFile() {
+	var conf Config
+	if _, err := toml.DecodeFile("config.toml", &conf); err != nil {
+		panic(err)
+	}
+	fmt.Println(conf.Root, conf.IP)
+	rootPath = conf.Root
+	if conf.IP != "IP address" {
+		ip = conf.IP
+	} else {
+		ip = getLocalAddr()
+	}
+}
+
+func createConfigFile() {
+	configFile, err := os.Create("config.toml")
+	if err != nil {
+		panic(err)
+	}
+	write := `
+# difip Config File
+
+root = "Root Path"
+# default local ip
+ip = "IP address"
+	`
+	ok, err := configFile.WriteString(write)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Create Config File Success.", ok)
+	fmt.Println("Please check config file and restart difip.")
+}
+
+func checkConfigFile() bool {
+	configFile, err := os.Open("config.toml")
+	if err != nil {
+		return false
+	}
+	defer configFile.Close()
+
+	return true
+}
+
 func getLocalAddr() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -42,6 +144,8 @@ func getLocalAddr() string {
 
 	addr := addrs[4].String()
 	addr = addr[:len(addr)-3]
+
+	ip = addr
 
 	return addr
 }
